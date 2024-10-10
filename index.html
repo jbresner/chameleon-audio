@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Cycler</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: hsl(0, 100%, 50%);
+            transition: background-color 0.3s ease;
+        }
+        h1 {
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <h1>Use Your Voice to Change the Color</h1>
+
+    <script>
+        let hue = 0; // Initial hue value
+
+        // Function to update the background color
+        function updateBackgroundColor() {
+            document.body.style.backgroundColor = `hsl(${hue}, 100%, 50%)`;
+        }
+
+        // Access the microphone and analyze audio input
+        async function startAudioProcessing() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const analyser = audioContext.createAnalyser();
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                analyser.fftSize = 256;
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                function analyzeAudio() {
+                    analyser.getByteFrequencyData(dataArray);
+                    const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                    hue = (hue + average / 50) % 360; // Adjust hue based on volume level
+                    updateBackgroundColor();
+                    requestAnimationFrame(analyzeAudio);
+                }
+
+                analyzeAudio();
+            } catch (err) {
+                console.error('Error accessing audio input:', err);
+            }
+        }
+
+        // Start audio processing when the page loads
+        window.addEventListener('load', startAudioProcessing);
+    </script>
+</body>
+</html>
